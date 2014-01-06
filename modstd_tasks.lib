@@ -1,0 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////
+version=" ";
+category="Commutative Algebra";
+info=" ";
+
+LIB "modular.lib";
+
+proc modStd_tasks(ideal I)
+{
+    return(modular("std", list(I)));
+}
