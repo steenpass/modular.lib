@@ -37,20 +37,29 @@ KEYWORDS:  modular.lib; Modular techniques; Parallelization;
 PROCEDURES:
   modular(...)  execute a command modulo several primes and lift the result
                 back to charakteristic zero
-  modp(...)     execute a command modulo a single prime
 ";
 
+LIB "resources.lib";
+LIB "tasks.lib";
 LIB "parallel.lib";
 
-proc modular(string command, list args, def primeTest,
-  def deleteUnluckyPrimes, def pTest, def finalTest, list #)
+static proc mod_init()
+{
+  if (!defined(Resources)) {
+    LIB "resources.lib";
+  }
+  int sem_cores = Resources::sem_cores;   // the number of processor cores
+  exportto(Modular, sem_cores);
+}
+
+proc modular(string Command, alias list Arguments, list #)
 {
   /* auxiliary variables */
   int i;
 
   /* read optional parameters */
-  int ncores_available = NbModProcs();
-  list defaults = list(ncores_available, ncores_available, 2, "ssi");
+  list defaults = list(primeTest_default, deleteUnluckyPrimes_default,
+      pTest_default, finalTest_default, 2147483647);
   for(i = 1; i <= size(defaults); i++)
   {
     if(typeof(#[i]) != typeof(defaults[i]))
@@ -62,153 +71,111 @@ proc modular(string command, list args, def primeTest,
   {
     ERROR("wrong optional parameters");
   }
-  int n1 = #[1];   // nb. of primes before the first lifting
-  int n2 = #[2];   // nb. of additional primes for the next lifting
-  int growths = #[3];
-  string linktype = #[4];
+  proc primeTest = #[1];
+  proc deleteUnluckyPrimes = #[2];
+  proc pTest = #[3];
+  proc finalTest = #[4];
+  int pmax = #[5];
 
-  /* error checking */
-  if (n1 < 1 || n2 < 1 || growths < 1) {
-    ERROR("wrong optional parameters");
-  }
-  if (typeof(primeTest) != "proc" && typeof(primeTest) != "string") {
-    ERROR("incorrect argument primeTest");
-  }
-  if (typeof(deleteUnluckyPrimes) != "proc"
-    && typeof(deleteUnluckyPrimes) != "string") {
-    ERROR("incorrect argument deleteUnluckyPrimes");
-  }
-  if (typeof(pTest) != "proc" && typeof(pTest) != "string") {
-    ERROR("incorrect argument pTest");
-  }
-  if (typeof(finalTest) != "proc" && typeof(finalTest) != "string") {
-    ERROR("incorrect argument finalTest");
-  }
-
-  /* define procs deleteUnluckyPrimes, pTest, and finalTest */
-  if (typeof(primeTest) == "string") {
-    if (primeTest == "") {
-      kill primeTest;
-      proc primeTest = primeTest_default;
-    }
-    else {
-      ERROR("incorrect argument primeTest");
-    }
-  }
-  if (typeof(deleteUnluckyPrimes) == "string") {
-    if (deleteUnluckyPrimes == "") {
-      kill deleteUnluckyPrimes;
-      proc deleteUnluckyPrimes = deleteUnluckyPrimes_default;
-    }
-    else {
-      ERROR("incorrect argument deleteUnluckyPrimes");
-    }
-  }
-  if (typeof(pTest) == "string") {
-    if (pTest == "") {
-      kill pTest;
-      proc pTest = pTest_default;
-    }
-    else {
-      ERROR("incorrect argument pTest");
-    }
-  }
-  if (typeof(finalTest) == "string") {
-    if (finalTest == "") {
-      kill finalTest;
-      proc finalTest = finalTest_default;
-    }
-    else {
-      ERROR("incorrect argument finalTest");
-    }
-  }
+  /* export command and arguments */
+  exportto(Modular, Command);
+  exportto(Modular, Arguments);
 
   /* modular computations */
   def result;
   def result_lift;
-  list modargs;
+  bigint N = 1;
   list modresults;
   list primes;
-  bigint N = 1;
+  int nAllPrimes;
+  int nNewPrimes;
+  list indices;
+  int ncores_available;
   while(1) {
     // compute list of primes
-    if (size(primes) == 0) {
-      primes = primeList(n1, primeTest, args);
+    if (nAllPrimes == 0) {
+      nNewPrimes = NbModProcs();
     }
     else {
-      primes = primeList(n2, primeTest, args, primes[1]);
-      n2 = n2*growths;
+      ncores_available = system("semaphore", "get_value", sem_cores)+1;
+      nNewPrimes = (nAllPrimes div ncores_available)*ncores_available;
     }
+    primes = primeList(primeTest, nNewPrimes, pmax);
+    pmax = primes[size(primes)]-1;
+    nAllPrimes = nAllPrimes+nNewPrimes;
 
     // do computation modulo several primes
-    modargs = list();
     for (i = size(primes); i > 0; i--) {
-      modargs[i] = list(command, args, primes[i]);
+      task t(i) = "Modular::modp", primes[i];
     }
-    modresults = parallelWaitAll("modp", modargs, linktype);
+    startTasks(t(1..size(primes)));
+    waitAllTasks(t(1..size(primes)));
+    for (i = size(primes); i > 0; i--) {
+      modresults[i] = getResult(t(i));
+      killTask(t(i));
+      kill t(i);
+    }
 
     // delete unlucky primes
-    modresults = deleteUnluckyPrimes(modresults);
+    indices = deleteUnluckyPrimes(modresults);
+    for (i = size(indices); i > 0; i--) {
+      modresults = delete(modresults, indices[i]);
+    }
 
     // lift result
-    if (typeof(result_lift) == "none") {
-      result_lift = modresults[1][1];
+    if (N == 1) {
+      result_lift = chinrem(modresults, primes);
     }
-    result_lift, N = modlift(modresults, result_lift, N);
+    else {
+      result_lift = chinrem(list(result_lift)+modresults, list(N)+primes);
+    }
+    for (i = size(primes); i > 0; i--) {
+      N = N*primes[i];
+    }
 
     // apply farey
-    result = par_farey(result_lift, N);
+    result = farey(result_lift, N);
 
     // pTest
-    if(!pTest(command, args, result, primes)) {
+    if(!pTest(Command, Arguments, result, pmax)) {
       continue;
     }
 
     // finalTest
-    if(finalTest(command, args, result)) {
+    if(finalTest(Command, Arguments, result)) {
       break;
     }
   }
+
+  /* kill command and arguments */
+  kill Command;
+  kill Arguments;
 
   /* return of result */
   return(result);
 }
 
-static proc primeList(int n, proc primeTest, list args, list #)
+static proc primeList(proc primeTest, int n, int pmax)
 {
-  int i;
-
-  /* read optional parameters */
-  int p = 2147483647;
-  if (size(#) > 0) {
-    if (size(#) > 1 || typeof(#[1]) != "int") {
-      ERROR("wrong optional parameters");
-    }
-    p = #[1]-1;
-    if (p < 2) {
-      ERROR("wrong optional parameters");
-    }
-  }
-
-  /* compute primes */
   list primes;
-  for (i = n; i > 0; i--) {
+  int p = pmax;
+  int i;
+  for (i = 1; i <= n; i++) {
     if (p < 2) {
       ERROR("no more primes");
     }
     p = prime(p);
-    if (!primeTest(p, args)) {
+    if (!primeTest(p, Arguments)) {
       p--;
       continue;
     }
     primes[i] = p;
     p--;
   }
-
   return(primes);
 }
 
-proc modp(string command, list args, int p)
+static proc modp(int p)
 {
   def br = basering;
   list lbr = ringlist(br);
@@ -220,81 +187,38 @@ proc modp(string command, list args, int p)
   }
   def rp = ring(lbr);
   setring(rp);
-  list args = fetch(br, args);
-  execute("def result = "+command+"("+argsToString("args", size(args))+");");
+  list args = fetch(br, Arguments);
+  execute("def result = "+Command+"("+Tasks::argsToString("args", size(args))
+      +");");
   setring(br);
   def result = fetch(rp, result);
-  return(list(result, p));
+  return(result);
 }
 
-static proc par_farey(def arg, bigint N)
-{
-  if (typeof(arg) == "ideal") {
-    list arguments;
-    int i;
-    for (i = ncols(arg); i > 0; i--) {
-      arguments[i] = list(ideal(arg[i]), N);
-    }
-    list gens = parallelWaitAll("farey", arguments);
-    ideal result;
-    for (i = size(gens); i > 0; i--) {
-      result[i] = gens[i][1];
-    }
-    return(result);
-  }
-
-  return(farey(arg, N));
-}
-
-static proc primeTest_default(int p, list args)
+static proc primeTest_default(int p, alias list args)
 {
   return(1);
 }
 
-static proc deleteUnluckyPrimes_default(list modresults)
+static proc deleteUnluckyPrimes_default(alias list modresults)
 {
-  return(modresults);
+  return(list());
 }
 
-/* works so far for the following types: ideal (to be continued) */
-static proc modlift(list modresults, def result, bigint N)
-{
-  /* copy data to lists convenient for chinrem()
-   * (don't blame me, it's the stupid Singular interpreter) */
-  list L1;        // the individual results
-  list L2;        // the corresponding primes
-  int size_modresults = size(modresults);
-  if(N != 1) {
-    L1[size_modresults+1] = result;
-    L2[size_modresults+1] = N;
-  }
-  int i;
-  for (i = size_modresults; i > 0; i--) {
-    L1[i] = modresults[i][1];
-    L2[i] = modresults[i][2];
-    N = N*L2[i];
-  }
-
-  /* apply chinrem() */
-  result = chinrem(L1, L2);
-
-  /* return result */
-  return(result, N);
-}
-
-static proc pTest_default
+static proc pTest_default(string command, alias list args, def result,
+    int pmax)
 {
   return(1);
 }
 
-static proc finalTest_default
+static proc finalTest_default(string command, alias list args, def result)
 {
   return(1);
 }
 
 static proc NbModProcs()
 {
-    int available = system("semaphore", "get_value", 0)+1;
+    int available = system("semaphore", "get_value", sem_cores)+1;
     int nb;
     if (available < 16) {
         nb = ((10 div available)+1-(10%available == 0))*available;
