@@ -133,7 +133,7 @@ static proc pTest_std(string command, list args, ideal result, int p)
             return(0);
         }
     }
-    Ip = groebner(Ip);
+    execute("Ip = "+command+"(Ip);");
     for (i = ncols(Gp); i > 0; i--) {
         if (reduce(Gp[i], Ip, 1) != 0) {
             setring(br);
