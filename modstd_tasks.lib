@@ -7,10 +7,12 @@ LIB "modular.lib";
 
 proc modStd_tasks(ideal I)
 {
+    intvec opt = option(get);
     option(redSB);
     I = modular("groebner", list(I), primeTest_std, deleteUnluckyPrimes_std,
         pTest_std, finalTest_std);
     attrib(I, "isSB", 1);
+    option(set, opt);
     return(I);
 }
 
