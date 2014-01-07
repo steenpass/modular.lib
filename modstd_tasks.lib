@@ -7,5 +7,135 @@ LIB "modular.lib";
 
 proc modStd_tasks(ideal I)
 {
-    return(modular("std", list(I)));
+    option(redSB);
+    I = modular("groebner", list(I), primeTest_std, deleteUnluckyPrimes_std,
+        pTest_std, finalTest_std);
+    attrib(I, "isSB", 1);
+    return(I);
+}
+
+static proc primeTest_std(int p, alias list args)
+{
+    ideal I = simplify(args[1], 2);   // erase zero generators
+    int i, j;
+    poly f;
+    number cnt;
+    for(i = size(I); i > 0; i--) {
+        f = cleardenom(I[i]);
+        if (f == 0) { return(0); }
+        cnt = leadcoef(I[i])/leadcoef(f);
+        if ((numerator(cnt) mod p) == 0) { return(0); }
+        if ((denominator(cnt) mod p) == 0) { return(0); }
+        for (j = size(f); j > 0; j--) {
+            if ((leadcoef(f[j]) mod p) == 0) { return(0); }
+        }
+    }
+    return(1);
+}
+
+static proc deleteUnluckyPrimes_std(alias list modresults)
+{
+    int size_modresults = size(modresults);
+
+    /* sort results into categories.
+     * each category is represented by three entries:
+     * - the corresponding leading ideal
+     * - the number of elements
+     * - the indices of the elements
+     */
+    list cat;
+    int size_cat;
+    ideal L;
+    int i;
+    int j;
+    for (i = 1; i <= size_modresults; i++) {
+        L = lead(modresults[i]);
+        attrib(L, "isSB", 1);
+        for (j = 1; j <= size_cat; j++) {
+            if (size(L) == size(cat[j][1])
+                && size(reduce(L, cat[j][1])) == 0
+                && size(reduce(cat[j][1], L)) == 0) {
+                cat[j][2] = cat[j][2]+1;
+                cat[j][3][cat[j][2]] = i;
+                break;
+            }
+        }
+        if (j > size_cat) {
+            size_cat++;
+            cat[size_cat] = list();
+            cat[size_cat][1] = L;
+            cat[size_cat][2] = 1;
+            cat[size_cat][3] = list(i);
+        }
+    }
+
+    /* find the biggest categories */
+    int cat_max = 1;
+    int max = cat[1][2];
+    for (i = 2; i <= size_cat; i++) {
+        if (cat[i][2] > max) {
+            cat_max = i;
+            max = cat[i][2];
+        }
+    }
+
+    /* return all other indices */
+    list unluckyIndices;
+    for (i = 1; i <= size_cat; i++) {
+        if (i != cat_max) {
+            unluckyIndices = unluckyIndices + cat[i][3];
+        }
+    }
+    return(unluckyIndices);
+}
+
+static proc pTest_std(string command, list args, ideal result, int p)
+{
+    def br = basering;
+    list lbr = ringlist(br);
+    if (typeof(lbr[1]) == "int") {
+        lbr[1] = p;
+    }
+    else {
+        lbr[1][1] = p;
+    }
+    def rp = ring(lbr);
+    setring(rp);
+    ideal Ip = fetch(br, args)[1];
+    ideal Gp = fetch(br, result);
+    attrib(Gp, "isSB", 1);
+    int i;
+    for (i = ncols(Ip); i > 0; i--) {
+        if (reduce(Ip[i], Gp, 1) != 0) {
+            setring(br);
+            return(0);
+        }
+    }
+    Ip = groebner(Ip);
+    for (i = ncols(Gp); i > 0; i--) {
+        if (reduce(Gp[i], Ip, 1) != 0) {
+            setring(br);
+            return(0);
+        }
+    }
+    setring(br);
+    return(1);
+}
+
+static proc finalTest_std(string command, alias list args, ideal result)
+{
+    attrib(result, "isSB", 1);
+    int i;
+    for (i = ncols(args[1]); i > 0; i--) {
+        if (reduce(args[1][i], result, 1) != 0) {
+            return(0);
+        }
+    }
+    ideal G = std(result);
+    for (i = ncols(G); i > 0; i--) {
+        if (reduce(G[i], result, 1) != 0) {
+            return(0);
+        }
+    }
+    return(1);
 }
