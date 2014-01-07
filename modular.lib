@@ -86,6 +86,7 @@ proc modular(string Command, alias list Arguments, list #)
     list primes;
     int nAllPrimes;
     int nNewPrimes;
+    int p;
     list indices;
     int ncores_available;
     while (1) {
@@ -135,7 +136,14 @@ proc modular(string Command, alias list Arguments, list #)
         result = farey(result_lift, N);
 
         // pTest
-        if (!pTest(Command, Arguments, result, pmax)) {
+        p = prime(random(pmax div 2, pmax-1));
+        while (!primeTest(p, Arguments)) {
+            if (p <= 2) {
+                ERROR("no more primes");
+            }
+            p = prime(random(p div 2, p-1));
+        }
+        if (!pTest(Command, Arguments, result, p)) {
             continue;
         }
 
@@ -203,8 +211,7 @@ static proc deleteUnluckyPrimes_default(alias list modresults)
     return(list());
 }
 
-static proc pTest_default(string command, alias list args, def result,
-    int pmax)
+static proc pTest_default(string command, alias list args, def result, int p)
 {
     return(1);
 }
