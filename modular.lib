@@ -73,6 +73,7 @@ proc modular(string Command, alias list Arguments, list #)
     proc pTest = #[3];
     proc finalTest = #[4];
     int pmax = #[5];
+    exportto(Modular, primeTest);
 
     /* export command and arguments */
     exportto(Modular, Command);
@@ -105,7 +106,7 @@ proc modular(string Command, alias list Arguments, list #)
                     *ncores_available;
             }
         }
-        primes = primeList(primeTest, nNewPrimes, pmax);
+        primes = primeList(nNewPrimes, pmax);
         pmax = primes[size(primes)]-1;
         nAllPrimes = nAllPrimes+nNewPrimes;
 
@@ -144,7 +145,7 @@ proc modular(string Command, alias list Arguments, list #)
 
         // pTest
         p = prime(random(pmax div 2, pmax-1));
-        while (!primeTest(p, Arguments)) {
+        while (!Modular::primeTest(p, Arguments)) {
             if (p <= 2) {
                 ERROR("no more primes");
             }
@@ -160,15 +161,16 @@ proc modular(string Command, alias list Arguments, list #)
         }
     }
 
-    /* kill command and arguments */
+    /* kill exported data */
     kill Command;
     kill Arguments;
+    kill primeTest;
 
     /* return of result */
     return(result);
 }
 
-static proc primeList(proc primeTest, int n, int pmax)
+static proc primeList(int n, int pmax)
 {
     list primes;
     int p = pmax;
@@ -178,14 +180,28 @@ static proc primeList(proc primeTest, int n, int pmax)
             ERROR("no more primes");
         }
         p = prime(p);
-        if (!primeTest(p, Arguments)) {
-            p--;
-            continue;
-        }
-        primes[i] = p;
+        task t(i) = "Modular::primeList_task", list(p);
         p--;
     }
+    startTasks(t(1..n));
+    waitAllTasks(t(1..n));
+    int j;
+    for (i = 1; i <= n; i++) {
+        if (getResult(t(i))) {
+            j++;
+            primes[j] = getArguments(t(i))[1];
+        }
+        killTask(t(i));
+    }
+    if (j < n) {
+        primes = primes+primeList(n-j, p);
+    }
     return(primes);
+}
+
+static proc primeList_task(int p)
+{
+    return(Modular::primeTest(p, Arguments));
 }
 
 static proc modp(int p)
