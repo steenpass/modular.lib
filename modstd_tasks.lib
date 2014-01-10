@@ -154,10 +154,47 @@ static proc finalTest_std(string command, alias list args, ideal result)
         }
     }
     ideal G = std(result);
-    for (i = ncols(G); i > 0; i--) {
-        if (reduce(G[i], result, 1) != 0) {
-            return(0);
-        }
+    if (reduce_parallel(G, result)) {
+        return(0);
     }
     return(1);
+}
+
+static proc reduce_parallel(ideal I_reduce, ideal G_reduce)
+{
+    exportto(Modstd_tasks, I_reduce);
+    exportto(Modstd_tasks, G_reduce);
+    int size_I = ncols(I_reduce);
+    int chunks = Modular::par_range(size_I);
+    intvec range;
+    int i;
+    for (i = chunks; i > 0; i--) {
+        range = Modular::par_range(size_I, i);
+        task t(i) = "Modstd_tasks::reduce_task", list(range);
+    }
+    startTasks(t(1..chunks));
+    waitAllTasks(t(1..chunks));
+    int result = 0;
+    for (i = chunks; i > 0; i--) {
+        if (getResult(t(i))) {
+            result = 1;
+            break;
+        }
+    }
+    kill I_reduce;
+    kill G_reduce;
+    return(result);
+}
+
+static proc reduce_task(intvec range)
+{
+    int result = 0;
+    int i;
+    for (i = range[1]; i <= range[2]; i++) {
+        if (reduce(I_reduce[i], G_reduce, 1) != 0) {
+            result = 1;
+            break;
+        }
+    }
+    return(result);
 }
