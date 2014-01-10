@@ -140,7 +140,7 @@ proc modular(string Command, alias list Arguments, list #)
         }
 
         // apply farey
-        result = farey(result_lift, N);
+        result = farey_parallel(result_lift, N);
 
         // pTest
         p = prime(random(pmax div 2, pmax-1));
@@ -226,6 +226,52 @@ static proc pTest_default(string command, alias list args, def result, int p)
 static proc finalTest_default(string command, alias list args, def result)
 {
     return(1);
+}
+
+static proc farey_parallel(ideal farey_arg, bigint farey_N)
+{
+    exportto(Modular, farey_arg);
+    exportto(Modular, farey_N);
+    int size_arg = ncols(farey_arg);
+    int chunks = par_range(size_arg);
+    intvec range;
+    int i;
+    for (i = chunks; i > 0; i--) {
+        range = par_range(size_arg, i);
+        task t(i) = "Modular::farey_task", list(range);
+    }
+    startTasks(t(1..chunks));
+    waitAllTasks(t(1..chunks));
+    ideal result;
+    for (i = chunks; i > 0; i--) {
+        result = getResult(t(i)), result;
+        killTask(t(i));
+    }
+    kill farey_arg;
+    kill farey_N;
+    return(result);
+}
+
+static proc farey_task(intvec range)
+{
+    ideal result = farey(ideal(farey_arg[range[1]..range[2]]), farey_N);
+    return(result);
+}
+
+static proc par_range(int N, list #)
+{
+    int nchunks = 2*getcores();
+    if (nchunks > N) {
+        nchunks = N;
+    }
+    if (size(#)) {
+        int index = #[1];
+        intvec range = ((N*(index-1)) div nchunks)+1, (N*index) div nchunks;
+        return(range);
+    }
+    else {
+        return(nchunks);
+    }
 }
 
 static proc NbModProcs()
