@@ -96,7 +96,14 @@ proc modular(string Command, alias list Arguments, list #)
         }
         else {
             ncores_available = system("semaphore", "get_value", sem_cores)+1;
-            nNewPrimes = (nAllPrimes div ncores_available)*ncores_available;
+            nNewPrimes = nAllPrimes div ncores_available;
+            if (nAllPrimes < ncores_available) {
+                nNewPrimes = nAllPrimes;
+            }
+            else {
+                nNewPrimes = (nAllPrimes div ncores_available)
+                    *ncores_available;
+            }
         }
         primes = primeList(primeTest, nNewPrimes, pmax);
         pmax = primes[size(primes)]-1;
