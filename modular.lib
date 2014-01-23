@@ -258,8 +258,8 @@ static proc farey_parallel(ideal farey_arg, bigint farey_N)
     }
     startTasks(t(1..chunks));
     waitAllTasks(t(1..chunks));
-    ideal result;
-    for (i = chunks; i > 0; i--) {
+    ideal result = getResult(t(chunks));
+    for (i = chunks-1; i > 0; i--) {
         result = getResult(t(i)), result;
         killTask(t(i));
     }
