@@ -39,19 +39,39 @@ proc modStd_tasks(ideal I, list #)
 static proc primeTest_std(int p, alias list args)
 {
     ideal I = simplify(args[1], 2);   // erase zero generators
-    int i, j;
-    poly f;
+    ideal J;
+    ideal K;
+    int n = ncols(I);
+    intvec sizes;
     number cnt;
-    for(i = size(I); i > 0; i--) {
-        f = cleardenom(I[i]);
-        if (f == 0) { return(0); }
-        cnt = leadcoef(I[i])/leadcoef(f);
-        if ((numerator(cnt) mod p) == 0) { return(0); }
-        if ((denominator(cnt) mod p) == 0) { return(0); }
-        for (j = size(f); j > 0; j--) {
-            if ((leadcoef(f[j]) mod p) == 0) { return(0); }
-        }
+    int i;
+    for(i = n; i > 0; i--) {
+        J[i] = cleardenom(I[i]);
+        cnt = leadcoef(J[i])/leadcoef(I[i]);
+        K[i] = numerator(cnt)*var(1)+denominator(cnt);
     }
+    sizes = size(J[1..n]);
+    def br = basering;
+    list lbr = ringlist(br);
+    if (typeof(lbr[1]) == "int") {
+        lbr[1] = p;
+    }
+    else {
+        lbr[1][1] = p;
+    }
+    def rp = ring(lbr);
+    setring(rp);
+    ideal Jp = fetch(br, J);
+    ideal Kp = fetch(br, K);
+    if (intvec(size(Kp[1..n])) != 2:n) {
+        setring(br);
+        return(0);
+    }
+    if (intvec(size(Jp[1..n])) != sizes) {
+        setring(br);
+        return(0);
+    }
+    setring(br);
     return(1);
 }
 
