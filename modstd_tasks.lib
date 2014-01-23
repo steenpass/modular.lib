@@ -20,14 +20,20 @@ proc modStd_tasks(ideal I, list #)
     intvec opt = option(get);
     option(redSB);
 
+    /* set maximal prime number */
+    int pmax = 2147483647;
+    if (npars(basering) > 0) {
+        pmax = 536870909;   // prime(2^29)
+    }
+
     /* call modular() */
     if (exactness) {
         I = modular("groebner", list(I), primeTest_std,
-            deleteUnluckyPrimes_std, pTest_std, finalTest_std);
+            deleteUnluckyPrimes_std, pTest_std, finalTest_std, pmax);
     }
     else {
         I = modular("groebner", list(I), primeTest_std,
-            deleteUnluckyPrimes_std, pTest_std);
+            deleteUnluckyPrimes_std, pTest_std, pmax);
     }
 
     /* return the result */
