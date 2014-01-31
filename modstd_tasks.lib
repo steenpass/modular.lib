@@ -3,6 +3,7 @@ version=" ";
 category="Commutative Algebra";
 info=" ";
 
+LIB "poly.lib";
 LIB "modular.lib";
 
 proc modStd_tasks(ideal I, list #)
