@@ -57,9 +57,15 @@ proc modular(string Command, alias list Arguments, list #)
     /* auxiliary variables */
     int i;
 
+    /* set maximal prime number */
+    int pmax = 2147483647;
+    if (npars(basering) > 0) {
+        pmax = 536870909;   // prime(2^29)
+    }
+
     /* read optional parameters */
     list defaults = list(primeTest_default, deleteUnluckyPrimes_default,
-        pTest_default, finalTest_default, 2147483647);
+        pTest_default, finalTest_default, pmax);
     for (i = 1; i <= size(defaults); i++) {
         if (typeof(#[i]) != typeof(defaults[i])) {
             # = insert(#, defaults[i], i-1);
@@ -72,7 +78,7 @@ proc modular(string Command, alias list Arguments, list #)
     proc deleteUnluckyPrimes = #[2];
     proc pTest = #[3];
     proc finalTest = #[4];
-    int pmax = #[5];
+    pmax = #[5];
     exportto(Modular, primeTest);
 
     /* export command and arguments */
