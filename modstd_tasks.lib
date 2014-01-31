@@ -27,19 +27,32 @@ proc modStd_tasks(ideal I, list #)
         pmax = 536870909;   // prime(2^29)
     }
 
+    /* choose the right command */
+    string command = "groebner";
+    if (npars(basering) > 0) {
+        command = "Modstd_tasks::groebner_norm";
+    }
+
     /* call modular() */
     if (exactness) {
-        I = modular("groebner", list(I), primeTest_std,
+        I = modular(command, list(I), primeTest_std,
             deleteUnluckyPrimes_std, pTest_std, finalTest_std, pmax);
     }
     else {
-        I = modular("groebner", list(I), primeTest_std,
+        I = modular(command, list(I), primeTest_std,
             deleteUnluckyPrimes_std, pTest_std, pmax);
     }
 
     /* return the result */
     attrib(I, "isSB", 1);
     option(set, opt);
+    return(I);
+}
+
+static proc groebner_norm(ideal I)
+{
+    I = simplify(groebner(I), 1);
+    attrib(I, "isSB", 1);
     return(I);
 }
 
