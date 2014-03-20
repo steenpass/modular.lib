@@ -54,6 +54,11 @@ static proc mod_init()
 
 proc modular(string Command, alias list Arguments, list #)
 {
+    /* check for errors */
+    if (char(basering) != 0) {
+        ERROR("The characteristic must be zero.");
+    }
+
     /* auxiliary variables */
     int i;
 
