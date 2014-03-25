@@ -90,7 +90,6 @@ static proc pTest_quotient(string command, list args, ideal result, int p)
     attrib(result, "isSB", 1);
     int i;
     execute("ideal Qp = "+command+"(Ip, Jp);");
-    Qp = std(Qp);   // see trac ticket #588
     for (i = ncols(Qp); i > 0; i--) {
         if (reduce(Qp[i], result, 1) != 0) {
             setring(br);
