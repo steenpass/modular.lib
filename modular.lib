@@ -29,14 +29,14 @@ REFERENCES:
     Modular Algorithms. Journal of Symbolic Computation 46, 672-684 (2011).
     http://arxiv.org/abs/1005.5663
 
-SEE ALSO:  link, semaphore_lib, parallel_lib, modstd_lib, assprimeszerodim_lib
+SEE ALSO:  link, tasks_lib, parallel_lib, modstd_lib, assprimeszerodim_lib
 
 KEYWORDS:  modular.lib; Modular techniques; Parallelization;
            Skeletons for parallelization; Distributed computing
 
 PROCEDURES:
   modular(...)  execute a command modulo several primes and lift the result
-                back to charakteristic zero
+                back to characteristic zero
 ";
 
 LIB "resources.lib";
@@ -53,6 +53,23 @@ static proc mod_init()
 }
 
 proc modular(string Command, alias list Arguments, list #)
+"USAGE:   modular(command, arguments[, primeTest, deleteUnluckyPrimes, pTest,
+          finalTest, pmax), command string, arguments list, primeTest proc,
+          deleteUnluckyPrimes proc, pTest proc, finalTest proc, pmax int
+RETURN:   the result of @code{command} applied to @code{arguments},
+          computed using modular methods.
+NOTE:     For the general algorithm and the role of the optional arguments
+          primeTest, deleteUnluckyPrimes, pTest, and finalTest, see
+          @ref{modStd} and the reference given in @ref{modular.lib}. The
+          default for these arguments is that all tests succeed and that all
+          primes are assumed to be lucky.
+       @* The optional argument pmax is an upper bound for the prime numbers
+          to be used for the modular computations. The default is 2147483647
+          (largest prime which can be represented as an @code{int} in
+          Singular), or 536870909 (largest prime below 2^29} for baserings with
+          parameters.
+SEE ALSO: modStd
+EXAMPLE:  example modular; shows an example"
 {
     /* check for errors */
     if (char(basering) != 0) {
@@ -179,6 +196,14 @@ proc modular(string Command, alias list Arguments, list #)
 
     /* return of result */
     return(result);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    modular("std", list(I));
 }
 
 static proc primeList(int n, int pmax)
