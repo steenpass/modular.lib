@@ -168,3 +168,25 @@ static proc quotient_test(ideal I, ideal J, ideal Q)
     setring(br);
     return(1);
 }
+
+proc modSat(def id, ideal j, int exactness)
+"USAGE:  sat(id, j);  id ideal/module, j ideal
+RETURN:  list of an ideal/module [1] and an integer [2]:
+         [1] = saturation of id with respect to j (= union_(k=1...) of id:j^k)
+         [2] = saturation exponent (= min( k | id:j^k = id:j^(k+1) ))
+NOTE:    [1] is a standard basis in the basering
+{
+    int ii, kk;
+    def i = id;
+    id = modStd_tasks(id, exactness);
+    while (ii <= size(i)) {
+        i = modQuotient(id, j, exactness);
+        for (ii = 1; ii <= size(i); ii++) {
+            if (reduce(i[ii], id, 1) != 0) break;
+        }
+        id = modStd_tasks(i, exactness);
+        kk++;
+    }
+    list L = id, kk-1;
+    return(L);
+}
