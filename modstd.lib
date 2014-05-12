@@ -45,6 +45,7 @@ proc modStd(ideal I, list #)
     return(I);
 }
 
+/* compute a normalized GB via groebner() */
 static proc groebner_norm(ideal I)
 {
     I = simplify(groebner(I), 1);
@@ -52,9 +53,14 @@ static proc groebner_norm(ideal I)
     return(I);
 }
 
+/* test if the prime p is suitable for the input, i.e. it does not divide
+ * the numerator or denominator of any of the coefficients */
 static proc primeTest_std(int p, alias list args)
 {
-    ideal I = simplify(args[1], 2);   // erase zero generators
+    /* erase zero generators */
+    ideal I = simplify(args[1], 2);
+
+    /* clear denominators and count the terms */
     ideal J;
     ideal K;
     int n = ncols(I);
@@ -67,6 +73,8 @@ static proc primeTest_std(int p, alias list args)
         K[i] = numerator(cnt)*var(1)+denominator(cnt);
     }
     sizes = size(J[1..n]);
+
+    /* change to characteristic p */
     def br = basering;
     list lbr = ringlist(br);
     if (typeof(lbr[1]) == "int") {
@@ -79,6 +87,8 @@ static proc primeTest_std(int p, alias list args)
     setring(rp);
     ideal Jp = fetch(br, J);
     ideal Kp = fetch(br, K);
+
+    /* test if any coefficient is missing */
     if (intvec(size(Kp[1..n])) != 2:n) {
         setring(br);
         return(0);
@@ -91,6 +101,9 @@ static proc primeTest_std(int p, alias list args)
     return(1);
 }
 
+/* find entries in modresults which come from unlucky primes.
+ * For this, sort the entries into categories depending on their leading
+ * ideal and return the indices in all but the biggest category. */
 static proc deleteUnluckyPrimes_std(alias list modresults)
 {
     int size_modresults = size(modresults);
@@ -147,8 +160,11 @@ static proc deleteUnluckyPrimes_std(alias list modresults)
     return(unluckyIndices);
 }
 
+/* test if 'command' applied to 'args' in characteristic p is the same as
+   'result' mapped to characteristic p */
 static proc pTest_std(string command, list args, ideal result, int p)
 {
+    /* change to characteristic p */
     def br = basering;
     list lbr = ringlist(br);
     if (typeof(lbr[1]) == "int") {
@@ -162,6 +178,8 @@ static proc pTest_std(string command, list args, ideal result, int p)
     ideal Ip = fetch(br, args)[1];
     ideal Gp = fetch(br, result);
     attrib(Gp, "isSB", 1);
+
+    /* test if Ip is in Gp */
     int i;
     for (i = ncols(Ip); i > 0; i--) {
         if (reduce(Ip[i], Gp, 1) != 0) {
@@ -169,7 +187,11 @@ static proc pTest_std(string command, list args, ideal result, int p)
             return(0);
         }
     }
+
+    /* compute command(args) */
     execute("Ip = "+command+"(Ip);");
+
+    /* test if Gp is in Ip */
     for (i = ncols(Gp); i > 0; i--) {
         if (reduce(Gp[i], Ip, 1) != 0) {
             setring(br);
@@ -180,8 +202,10 @@ static proc pTest_std(string command, list args, ideal result, int p)
     return(1);
 }
 
+/* test if 'result' is a GB of the input ideal */
 static proc finalTest_std(string command, alias list args, ideal result)
 {
+    /* test if args[1] is in result */
     attrib(result, "isSB", 1);
     int i;
     for (i = ncols(args[1]); i > 0; i--) {
@@ -189,6 +213,8 @@ static proc finalTest_std(string command, alias list args, ideal result)
             return(0);
         }
     }
+
+    /* test if result is a GB */
     ideal G = std(result);
     if (reduce_parallel(G, result)) {
         return(0);
@@ -196,6 +222,10 @@ static proc finalTest_std(string command, alias list args, ideal result)
     return(1);
 }
 
+/* return 1, if I_reduce is _not_ in G_reduce,
+ *        0, otherwise
+ * (same as size(reduce(I_reduce, G_reduce))).
+ * Uses parallelization. */
 static proc reduce_parallel(ideal I_reduce, ideal G_reduce)
 {
     exportto(Modstd, I_reduce);
@@ -222,6 +252,7 @@ static proc reduce_parallel(ideal I_reduce, ideal G_reduce)
     return(result);
 }
 
+/* compute a chunk of reductions for reduce_parallel */
 static proc reduce_task(intvec range)
 {
     int result = 0;
