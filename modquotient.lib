@@ -36,7 +36,7 @@ proc modQuotient(ideal I, ideal J, list #)
     /* choose the right command */
     string command = "quotient";
     if (npars(basering) > 0) {
-        command = "Modstd_tasks::quotient_norm";
+        command = "Modquotient::quotient_norm";
     }
 
     /* call modular() */
