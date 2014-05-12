@@ -1,7 +1,29 @@
 ////////////////////////////////////////////////////////////////////////////////
-version=" ";
+version="$Id$";
 category="Commutative Algebra";
-info=" ";
+info="
+LIBRARY:  modstd.lib      Groebner bases of ideals using modular methods
+
+AUTHORS:  A. Hashemi      Amir.Hashemi@lip6.fr
+          G. Pfister      pfister@mathematik.uni-kl.de
+          H. Schoenemann  hannes@mathematik.uni-kl.de
+          A. Steenpass    steenpass@mathematik.uni-kl.de
+          S. Steidel      steidel@mathematik.uni-kl.de
+
+OVERVIEW:
+  A library for computing Groebner bases of ideals in the polynomial ring over
+  the rational numbers using modular methods.
+
+REFERENCES:
+  E. A. Arnold: Modular algorithms for computing Groebner bases.
+  J. Symb. Comp. 35, 403-419 (2003).
+
+  N. Idrees, G. Pfister, S. Steidel: Parallelization of Modular Algorithms.
+  J. Symb. Comp. 46, 672-684 (2011).
+
+PROCEDURES:
+  modStd(I);    standard basis of I using modular methods
+";
 
 LIB "poly.lib";
 LIB "modular.lib";
