@@ -6,7 +6,7 @@ info=" ";
 LIB "poly.lib";
 LIB "modular.lib";
 
-proc modStd_tasks(ideal I, list #)
+proc modStd(ideal I, list #)
 {
     /* read optional parameter */
     int exactness = 1;
@@ -26,7 +26,7 @@ proc modStd_tasks(ideal I, list #)
     /* choose the right command */
     string command = "groebner";
     if (npars(basering) > 0) {
-        command = "Modstd_tasks::groebner_norm";
+        command = "Modstd::groebner_norm";
     }
 
     /* call modular() */
@@ -198,15 +198,15 @@ static proc finalTest_std(string command, alias list args, ideal result)
 
 static proc reduce_parallel(ideal I_reduce, ideal G_reduce)
 {
-    exportto(Modstd_tasks, I_reduce);
-    exportto(Modstd_tasks, G_reduce);
+    exportto(Modstd, I_reduce);
+    exportto(Modstd, G_reduce);
     int size_I = ncols(I_reduce);
     int chunks = Modular::par_range(size_I);
     intvec range;
     int i;
     for (i = chunks; i > 0; i--) {
         range = Modular::par_range(size_I, i);
-        task t(i) = "Modstd_tasks::reduce_task", list(range);
+        task t(i) = "Modstd::reduce_task", list(range);
     }
     startTasks(t(1..chunks));
     waitAllTasks(t(1..chunks));
