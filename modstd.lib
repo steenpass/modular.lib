@@ -321,3 +321,79 @@ static proc reduce_task(intvec range)
     }
     return(result);
 }
+
+
+////////////////////////////// further examples ////////////////////////////////
+
+/*
+ring r = 0, (x,y,z), lp;
+poly s1 = 5x3y2z+3y3x2z+7xy2z2;
+poly s2 = 3xy2z2+x5+11y2z2;
+poly s3 = 4xyz+7x3+12y3+1;
+poly s4 = 3x3-4y3+yz2;
+ideal i =  s1, s2, s3, s4;
+
+ring r = 0, (x,y,z), lp;
+poly s1 = 2xy4z2+x3y2z-x2y3z+2xyz2+7y3+7;
+poly s2 = 2x2y4z+x2yz2-xy2z2+2x2yz-12x+12y;
+poly s3 = 2y5z+x2y2z-xy3z-xy3+y4+2y2z;
+poly s4 = 3xy4z3+x2y2z-xy3z+4y3z2+3xyz3+4z2-x+y;
+ideal i =  s1, s2, s3, s4;
+
+ring r = 0, (x,y,z), lp;
+poly s1 = 8x2y2 + 5xy3 + 3x3z + x2yz;
+poly s2 = x5 + 2y3z2 + 13y2z3 + 5yz4;
+poly s3 = 8x3 + 12y3 + xz2 + 3;
+poly s4 = 7x2y4 + 18xy3z2 +  y3z3;
+ideal i = s1, s2, s3, s4;
+
+int n = 6;
+ring r = 0,(x(1..n)),lp;
+ideal i = cyclic(n);
+ring s = 0, (x(1..n),t), lp;
+ideal i = imap(r,i);
+i = homog(i,t);
+
+ring r = 0, (x(1..4),s), (dp(4),dp);
+poly s1 = 1 + s^2*x(1)*x(3) + s^8*x(2)*x(3) + s^19*x(1)*x(2)*x(4);
+poly s2 = x(1) + s^8 *x(1)* x(2)* x(3) + s^19* x(2)* x(4);
+poly s3 = x(2) + s^10*x(3)*x(4) + s^11*x(1)*x(4);
+poly s4 = x(3) + s^4*x(1)*x(2) + s^19*x(1)*x(3)*x(4) +s^24*x(2)*x(3)*x(4);
+poly s5 = x(4) + s^31* x(1)* x(2)* x(3)* x(4);
+ideal i =  s1, s2, s3, s4, s5;
+
+ring r = 0, (x,y,z), ds;
+int a = 16;
+int b = 15;
+int c = 4;
+int t = 1;
+poly f = x^a+y^b+z^(3*c)+x^(c+2)*y^(c-1)+x^(c-1)*y^(c-1)*z3
+         +x^(c-2)*y^c*(y2+t*x)^2;
+ideal i = jacob(f);
+
+ring r = 0, (x,y,z), ds;
+int a = 25;
+int b = 25;
+int c = 5;
+int t = 1;
+poly f = x^a+y^b+z^(3*c)+x^(c+2)*y^(c-1)+x^(c-1)*y^(c-1)*z3
+         +x^(c-2)*y^c*(y2+t*x)^2;
+ideal i = jacob(f),f;
+
+ring r = 0, (x,y,z), ds;
+int a = 10;
+poly f = xyz*(x+y+z)^2 +(x+y+z)^3 +x^a+y^a+z^a;
+ideal i = jacob(f);
+
+ring r = 0, (x,y,z), ds;
+int a = 6;
+int b = 8;
+int c = 10;
+int alpha = 5;
+int beta = 5;
+int t = 1;
+poly f = x^a+y^b+z^c+x^alpha*y^(beta-5)+x^(alpha-2)*y^(beta-3)
+         +x^(alpha-3)*y^(beta-4)*z^2+x^(alpha-4)*y^(beta-4)*(y^2+t*x)^2;
+ideal i = jacob(f);
+*/
+
