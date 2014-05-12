@@ -11,7 +11,9 @@ proc modStd_tasks(ideal I, list #)
     /* read optional parameter */
     int exactness = 1;
     if (size(#) > 0) {
-        if (size(#) > 1 || typeof(#[1]) != "int") {
+        /* For compatibility, we only test size(#) > 4. This can be changed to
+         * size(#) > 1 in the future. */
+        if (size(#) > 4 || typeof(#[1]) != "int") {
             ERROR("wrong optional parameter");
         }
         exactness = #[1];
