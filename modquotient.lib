@@ -4,7 +4,7 @@ category="Commutative Algebra";
 info=" ";
 
 LIB "modular.lib";
-LIB "modstd_tasks.lib";
+LIB "modstd.lib";
 
 proc modQuotient(ideal I, ideal J, list #)
 {
@@ -24,7 +24,7 @@ proc modQuotient(ideal I, ideal J, list #)
 
     /* compute standard basis of I */
     if (!attrib(I, "isSB")) {
-        I = modStd_tasks(I);
+        I = modStd(I);
     }
 
     /* set maximal prime number */
@@ -43,12 +43,12 @@ proc modQuotient(ideal I, ideal J, list #)
     ideal Q;
     if (exactness) {
         Q = modular(command, list(I, J), primeTest_quotient,
-            Modstd_tasks::deleteUnluckyPrimes_std, pTest_quotient,
+            Modstd::deleteUnluckyPrimes_std, pTest_quotient,
             finalTest_quotient, pmax);
     }
     else {
         Q = modular(command, list(I, J), primeTest_quotient,
-            Modstd_tasks::deleteUnluckyPrimes_std, pTest_quotient, pmax);
+            Modstd::deleteUnluckyPrimes_std, pTest_quotient, pmax);
     }
 
     /* return the result */
@@ -66,10 +66,10 @@ static proc quotient_norm(alias ideal I, alias ideal J)
 
 static proc primeTest_quotient(int p, alias list args)
 {
-    if (!Modstd_tasks::primeTest_std(p, list(args[1]))) {
+    if (!Modstd::primeTest_std(p, list(args[1]))) {
         return(0);
     }
-    return(Modstd_tasks::primeTest_std(p, list(args[2])));
+    return(Modstd::primeTest_std(p, list(args[2])));
 }
 
 static proc pTest_quotient(string command, list args, ideal result, int p)
@@ -178,13 +178,13 @@ NOTE:    [1] is a standard basis in the basering
 {
     int ii, kk;
     def i = id;
-    id = modStd_tasks(id, exactness);
+    id = modStd(id, exactness);
     while (ii <= size(i)) {
         i = modQuotient(id, j, exactness);
         for (ii = 1; ii <= size(i); ii++) {
             if (reduce(i[ii], id, 1) != 0) break;
         }
-        id = modStd_tasks(i, exactness);
+        id = modStd(i, exactness);
         kk++;
     }
     list L = id, kk-1;
