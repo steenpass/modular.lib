@@ -57,7 +57,7 @@ proc modQuotient(ideal I, ideal J, list #)
     return(Q);
 }
 
-static proc quotient_norm(alias ideal I, alias ideal J)
+static proc quotient_norm(ideal I, ideal J)
 {
     ideal Q = simplify(quotient(I, J), 1);
     attrib(Q, "isSB", 1);
